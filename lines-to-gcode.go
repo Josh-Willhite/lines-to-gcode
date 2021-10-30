@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"flag"
 	"fmt"
 	"log"
 	"math"
@@ -27,6 +28,7 @@ type Line struct {
 }
 
 func (l *Line) Full() bool {
+	// Check is we have x,y,z values for both the start and end points
 	if len(l.Start) == 3 && len(l.End) == 3 {
 		return true
 	}
@@ -92,6 +94,7 @@ func (l *Lines) OrderLines() {
 				l.Swap(i, j)
 			}
 		}
+		// TODO add a failure condition here if we're unable to find the next line
 	}
 
 }
@@ -164,13 +167,17 @@ func GenerateGCode(lines Lines, layerDepth float64, layerCount int, feedRate flo
 }
 
 func main() {
-	feedRate := float64(1)
-	layerDepth := float64(0.4375) / float64(3)
-	layerCount := 3
-	fileLines := LinesInFile("/home/joshw/Documents/plant-stand-a.dxf")
+	filePath := flag.String("file-path", "", "The path to the dxf file to generate gcode from.")
+	feedRate := flag.Float64("feed-rate", 24.0, "The feed rate for all movements.")
+	materialThickness := flag.Float64("material-thickness", 0.4375, "Thickness of the material to be cut.")
+	layerCount := flag.Int("layer-count", 3, "How many passes to take through the material.")
+	layerDepth := *materialThickness / float64(*layerCount)
+	flag.Parse()
+
+	fileLines := LinesInFile(*filePath)
 	lines := ParseLines(fileLines)
 	lines.OrderLines()
-	gcode := GenerateGCode(lines, layerDepth, layerCount, feedRate)
+	gcode := GenerateGCode(lines, layerDepth, *layerCount, *feedRate)
 	for _, l := range gcode {
 		fmt.Println(l)
 	}
